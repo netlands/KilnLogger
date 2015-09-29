@@ -103,6 +103,7 @@ void setup()
     Spark.function("status", Status);
     Spark.function("Switch", Switch);
 
+    Spark.function("getData", getGraphData);
     Spark.variable("graph", &graphData, STRING);
 
 //begin Wire communication with OLED
@@ -245,9 +246,10 @@ void loop()
     }
 }
 
-void getGraphData() {
+int getGraphData(String args) {
 
   graphData = graph.toString();
+  return 1;
 
 }
 
