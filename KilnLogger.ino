@@ -1,3 +1,11 @@
+// This #include statement was automatically added by the Particle IDE.
+#include "PietteTech_DHT.h"
+
+// This #include statement was automatically added by the Particle IDE.
+#include "clickButton.h"
+
+#include "QueueArray.h"
+
 //*************************************//
 // --- WIDE.HK---//
 // - SSD131x PMOLED Controller -//
@@ -26,8 +34,6 @@ Make sure you replace the {YOURDEVICEID} and {YOURACCESSTOKEN} with information 
 ****************************************
 */
 
-/* DHT22 Blocking Version https://gist.github.com/wgbartley/8301123 */
-
 /*
   Temperature Reading from a MAX6675
   Ryan McLaughlin <ryanjmclaughlin@gmail.com>
@@ -36,7 +42,7 @@ Make sure you replace the {YOURDEVICEID} and {YOURACCESSTOKEN} with information 
 #define SO A4    // MISO
 #define SCK A3   // Serial Clock
 #define TC_0 A2  // CS Pin of MAX6607
-int TC_0_calib = 0;  // Calibration compensation value in digital counts (.25[ch730]C)
+int TC_0_calib = 0;  // Calibration compensation value in digital counts (.25˚C)
 
 char OLED_Address = 0x3c;
 char OLED_Command_Mode = 0x80;
@@ -46,209 +52,63 @@ char h1[10];  // humidity string
 char t1[10];  // temperature string
 char t2[10];  // temperature string
 
-#define MAXTIMINGS 85
+char data[128];
 
+String graphData;
+
+#define MAXTIMINGS 85
 #define cli noInterrupts
 #define sei interrupts
-
-#define DHT11 11
-#define DHT22 22
-#define DHT21 21
-#define AM2301 21
-
 #define NAN 999999
 
-class DHT {
-    private:
-        uint8_t data[6];
-        uint8_t _pin, _type, _count;
-        bool read(void);
-        unsigned long _lastreadtime;
-        bool firstreading;
+#define LEDPIN D7
 
-    public:
-        DHT(uint8_t pin, uint8_t type, uint8_t count=6);
-        void begin(void);
-        float readTemperature(bool S=false);
-        float convertCtoF(float);
-        float readHumidity(void);
-
-};
+// the Button
+const int buttonPin1 = 3;
+ClickButton button1(buttonPin1, LOW, CLICKBTN_PULLUP);
+// Button results
+int function = 0;
 
 
-DHT::DHT(uint8_t pin, uint8_t type, uint8_t count) {
-    _pin = pin;
-    _type = type;
-    _count = count;
-    firstreading = true;
-}
-
-
-void DHT::begin(void) {
-    // set up the pins!
-    pinMode(_pin, INPUT);
-    digitalWrite(_pin, HIGH);
-    _lastreadtime = 0;
-}
-
-
-//boolean S == Scale.  True == Farenheit; False == Celcius
-float DHT::readTemperature(bool S) {
-    float _f;
-
-    if (read()) {
-        switch (_type) {
-            case DHT11:
-                _f = data[2];
-
-                if(S)
-                    _f = convertCtoF(_f);
-
-                return _f;
-
-
-            case DHT22:
-            case DHT21:
-                _f = data[2] & 0x7F;
-                _f *= 256;
-                _f += data[3];
-                _f /= 10;
-
-                if (data[2] & 0x80)
-                    _f *= -1;
-
-                if(S)
-                    _f = convertCtoF(_f);
-
-                return _f;
-        }
-    }
-
-    return NAN;
-}
-
-
-float DHT::convertCtoF(float c) {
-    return c * 9 / 5 + 32;
-}
-
-
-float DHT::readHumidity(void) {
-    float _f;
-    if (read()) {
-        switch (_type) {
-            case DHT11:
-                _f = data[0];
-                return _f;
-
-
-            case DHT22:
-            case DHT21:
-                _f = data[0];
-                _f *= 256;
-                _f += data[1];
-                _f /= 10;
-                return _f;
-        }
-    }
-
-    return NAN;
-}
-
-
-bool DHT::read(void) {
-    uint8_t laststate = HIGH;
-    uint8_t counter = 0;
-    uint8_t j = 0, i;
-    unsigned long currenttime;
-
-    // pull the pin high and wait 250 milliseconds
-    digitalWrite(_pin, HIGH);
-    delay(250);
-
-    currenttime = millis();
-    if (currenttime < _lastreadtime) {
-        // ie there was a rollover
-        _lastreadtime = 0;
-    }
-
-    if (!firstreading && ((currenttime - _lastreadtime) < 2000)) {
-        //delay(2000 - (currenttime - _lastreadtime));
-        return true; // return last correct measurement
-    }
-
-    firstreading = false;
-    Serial.print("Currtime: "); Serial.print(currenttime);
-    Serial.print(" Lasttime: "); Serial.print(_lastreadtime);
-    _lastreadtime = millis();
-
-    data[0] = data[1] = data[2] = data[3] = data[4] = 0;
-
-    // now pull it low for ~20 milliseconds
-    pinMode(_pin, OUTPUT);
-    digitalWrite(_pin, LOW);
-    delay(20);
-    cli();
-    digitalWrite(_pin, HIGH);
-    delayMicroseconds(40);
-    pinMode(_pin, INPUT);
-
-    // read in timings
-    for ( i=0; i< MAXTIMINGS; i++) {
-        counter = 0;
-
-        while (digitalRead(_pin) == laststate) {
-            counter++;
-            delayMicroseconds(1);
-
-            if (counter == 255)
-                break;
-        }
-
-        laststate = digitalRead(_pin);
-
-        if (counter == 255)
-            break;
-
-        // ignore first 3 transitions
-        if ((i >= 4) && (i%2 == 0)) {
-            // shove each bit into the storage bytes
-            data[j/8] <<= 1;
-
-            if (counter > _count)
-                data[j/8] |= 1;
-
-            j++;
-        }
-    }
-
-    sei();
-
-
-    // check we read 40 bits and that the checksum matches
-    if ((j >= 40) &&  (data[4] == ((data[0] + data[1] + data[2] + data[3]) & 0xFF)))
-        return true;
-
-
-    return false;
-}
-
-#define DHTPIN D4    // Digital pin D2
+#define DHTPIN D4
 #define DHTTYPE DHT22
+PietteTech_DHT DHT(DHTPIN, DHTTYPE, dht_wrapper);
 
-DHT dht(DHTPIN, DHTTYPE);
+// This wrapper is in charge of calling
+// must be defined like this for the lib work
+void dht_wrapper() {
+    DHT.isrCallback();
+}
+
 
 float h;    // humidity
 float t;    // temperature
 int f = 0;  // failed?
 
+// delay related
+unsigned long lastTime = 0UL;
+unsigned long buttonDelay = 0UL;
+unsigned long publishDelay = 0UL;
+unsigned long logDelay = 0UL;
+
+// history
+// create a queue of numbers.
+QueueArray <float> queue;
+QueueArray <float> graph;
 
 void setup()
 {
+
+    pinMode(LEDPIN, OUTPUT);
+    Spark.function("status", Status);
+    Spark.function("Switch", Switch);
+
+    Spark.variable("graph", &graphData, STRING);
+
 //begin Wire communication with OLED
 Wire.begin();
 
-dht.begin();
+ // pinMode(DHTPIN, INPUT_PULLUP); // not uses as we have an external pullup
 
  pinMode(SO, INPUT);
  pinMode(SCK, OUTPUT);
@@ -256,14 +116,16 @@ dht.begin();
  pinMode(TC_0, OUTPUT);
  digitalWrite(TC_0,HIGH);  // Disable device
 
-
 //set the one external function to call to update the OLED with a message
 Spark.function("update", update);
+
 
     Spark.variable("humidity", &h1, STRING);
     Spark.variable("temperature", &t1, STRING);
 
     Spark.variable("thermocouple", &t2, STRING);
+
+    Spark.variable("data", &data, STRING);
 //initialize screen
 SetupScreen();
 
@@ -273,47 +135,160 @@ sendMessage("started");
 delay(1000);//wait one sec to see the started message
 
 sendCommand(0x01); // ** Clear display
+
+  // Setup button timers (all in milliseconds / ms)
+  // (These are default if not set, but changeable for convenience)
+  button1.debounceTime   = 20;   // Debounce timer in ms
+  button1.multiclickTime = 250;  // Time limit for multi clicks
+  button1.longClickTime  = 1000; // time until "held-down clicks" register
+
 }
 
 void loop()
 {
 
-	delay(2500);
+	unsigned long now  = millis();
 
-    f = 0;
-    h = dht.readHumidity();
-    t = dht.readTemperature();
+    if (now-buttonDelay>5UL) {
+        buttonDelay = now;
 
-    if (t==NAN || h==NAN)
-        f = 1;
-    else
+        // Update button state
+        button1.Update();
+
+        // Save click codes in LEDfunction, as click codes are reset at next Update()
+        if (button1.clicks != 0) function = button1.clicks;
+
+        if(function == 1) {
+            digitalWrite(LEDPIN, HIGH);
+            Spark.publish("switch", String('1'), 60, PRIVATE); }
+        if(function < 0 || function > 1) {
+            digitalWrite(LEDPIN, LOW);
+            Spark.publish("switch", String('0'), 60, PRIVATE); }
+
+        /* if(function == 0) sendMessage("0"); // "no click"
+
+        if(function == 1) sendMessage("1"); // "SINGLE click"
+
+        if(function == 2) sendMessage("2"); // "DOUBLE click"
+
+        if(function == 3) sendMessage("3"); // "TRIPLE click"
+
+        if(function == -1) sendMessage("111"); // "SINGLE LONG click"
+
+        if(function == -2) sendMessage("222"); // "DOUBLE LONG click" */
+
+        if(function == -3) System.reset(); // "TRIPLE LONG click"
+
+        function = 0;
+    }
+
+
+    // Update data and display and publish every 2.5 sec
+    // DHT refresh update 2 sec, minimum delay between reads 250 ms
+    if (now-lastTime>2500UL) {
+        lastTime = now;
+
+        // Read the thermocouple temperature and print it to serial
+        float temp;
+        temp = (float)read_temp(TC_0,1,TC_0_calib,10) / 10;
+        sprintf(t2, "%.1f", temp);
+
+        int result = DHT.acquireAndWait();
         f = 0;
+        h = DHT.readHumidity();
+        t = DHT.readTemperature();
 
-  sendCommand(0x01); // ** Clear display
-  sprintf(h1, "%.1f", h); // convert Float to String
-  sprintf(t1, "%.1f", t);
-  sendMessage(t1);
-	sendData(0xDF);
-	sendCommand(0xC0); // ** New Line
-	sendMessage(h1);
-  sendData(0x25);
+        if (t==NAN || h==NAN)
+            f = 1;
+        else
+            f = 0;
 
-  // Read the temperature and print it to serial
-  float temp;
-  temp = (float)read_temp(TC_0,1,TC_0_calib,10) / 10;
-  sprintf(t2, "%.1f", temp);
-  sendMessage("   ");
-  sendMessage(t2);
-  sendData(0xDF);
+          sendCommand(0x01); // ** Clear display
+          sprintf(h1, "%.1f", h); // convert Float to String
+          sprintf(t1, "%.1f", t);
+          sendMessage(t1);
+          sendData(0xDF);
 
-    // round the value for display
-    int t;
-    t = int(temp);
-    temp = float(t);
+          sendMessage("   ");
 
+          sendCommand(0xC0); // ** New Line
 
+          sendMessage(h1);
+          sendData(0x25);
+
+          sendMessage("   ");
+
+          sendMessage(t2);
+          sendData(0xDF);
+
+          // format your data as JSON, don't forget to escape the double quotes
+          sprintf(data, "{\"temperature\":%.1f,\"humidity\":%.1f,\"size\":%.1i}", t, h, graph.count());
+
+          }
+
+    // Publish data every 15 seconds
+    if (now-publishDelay>15000UL) {
+        publishDelay = now;
+        Spark.publish("temperature", String(t1), 60, PRIVATE);
+        Spark.publish("humidity",String(h1), 60, PRIVATE);
+        Spark.publish("thermocouple", String(t2), 60, PRIVATE);
+        if (graph.count() == 19){graph.pop();}
+        graph.enqueue(t);
+    }
+
+    // log data every 10 minutes
+    if (now-logDelay>600000UL) {
+      logDelay = now;
+      // keep 24 hours
+      if (queue.count() == 143){queue.pop();}
+      queue.enqueue(t);
+    }
+}
+
+void getGraphData() {
+
+  graphData = graph.toString();
 
 }
+
+int Status(String args) {
+    int status_code = 2;
+    if (digitalRead(LEDPIN) == 0) {
+        status_code = 0;
+    }
+    if (digitalRead(LEDPIN) == 1) {
+        status_code = 1;
+    }
+    return status_code;
+}
+
+int Switch(String args)
+{
+  int status_code = 0;
+  char id = args.charAt(0);
+
+  if (args == "ON" || args == "on" || args == "1"){
+    digitalWrite(LEDPIN, HIGH);
+    status_code = 1;
+  }
+
+  if (args == "OFF" || args == "off" || args == "0"){
+    digitalWrite(LEDPIN, LOW);
+    status_code = 0;
+  }
+  return status_code;
+}
+
+int switchOn(String command) {
+	pinMode(LEDPIN, OUTPUT);
+	digitalWrite(LEDPIN, 1);
+	return 1;}
+
+int switchOff(String command) {
+	pinMode(LEDPIN, OUTPUT);
+	digitalWrite(LEDPIN, 0);
+	return 0;}
+
 
 int update(String args)
 {
@@ -432,7 +407,7 @@ i++;
 
    Usage: read_temp(int pin, int type, int error)
      pin: the CS pin of the MAX6675
-     type: 0 for [ch730]F, 1 for [ch730]C
+     type: 0 for ˚F, 1 for ˚C
      error: error compensation in digital counts
      samples: number of measurement samples (max:10)
 */
@@ -471,20 +446,20 @@ unsigned int read_temp(int pin, int type, int error, int samples) {
 
   /*
      Keep in mind that the temp that was just read is on the digital scale
-     from 0[ch730]C to 1023.75[ch730]C at a resolution of 2^12.  We now need to convert
+     from 0˚C to 1023.75˚C at a resolution of 2^12.  We now need to convert
      to an actual readable temperature (this drove me nuts until I figured
      this out!).  Now multiply by 0.25.  I tried to avoid float math but
-     it is tough to do a good conversion to [ch730]F.  THe final value is converted
+     it is tough to do a good conversion to ˚F.  THe final value is converted
      to an int and returned at x10 power.
 
    */
 
   value = value + error;  // Insert the calibration error value
 
-  if(type == 0) {  // Request temp in [ch730]F
-    temp = ((value*0.25) * (9.0/5.0)) + 32.0;  // Convert value to [ch730]F (ensure proper floats!)
-  } else if(type == 1) {  // Request temp in [ch730]C
-    temp = (value*0.25);  // Multiply the value by 25 to get temp in [ch730]C
+  if(type == 0) {  // Request temp in ˚F
+    temp = ((value*0.25) * (9.0/5.0)) + 32.0;  // Convert value to ˚F (ensure proper floats!)
+  } else if(type == 1) {  // Request temp in ˚C
+    temp = (value*0.25);  // Multiply the value by 25 to get temp in ˚C
   }
 
   temp_out = temp*10;  // Send the float to an int (X10) for ease of printing.
