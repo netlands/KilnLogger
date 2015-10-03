@@ -201,9 +201,9 @@ String QueueArray<T>::toString () {
 
   // create string
   for (int i = 0; i < items; i++)
-    str = str + "," + contents[(head + i) % size];
+    str = str + " " + String(contents[i]);
 
-  return str;
+  return str.trim();
 
 }
 

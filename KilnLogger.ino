@@ -54,7 +54,7 @@ char t2[10];  // temperature string
 
 char data[128];
 
-String graphData;
+char graphData[200];
 
 #define MAXTIMINGS 85
 #define cli noInterrupts
@@ -93,8 +93,8 @@ unsigned long logDelay = 0UL;
 
 // history
 // create a queue of numbers.
-QueueArray <float> queue;
-QueueArray <float> graph;
+QueueArray <int> queue;
+QueueArray <int> graph;
 
 void setup()
 {
@@ -104,7 +104,7 @@ void setup()
     Spark.function("Switch", Switch);
 
     Spark.function("getData", getGraphData);
-    Spark.variable("graph", &graphData, STRING);
+    Spark.variable("history", &graphData, STRING);
 
 //begin Wire communication with OLED
 Wire.begin();
@@ -233,22 +233,24 @@ void loop()
         Spark.publish("temperature", String(t1), 60, PRIVATE);
         Spark.publish("humidity",String(h1), 60, PRIVATE);
         Spark.publish("thermocouple", String(t2), 60, PRIVATE);
-        if (graph.count() == 19){graph.pop();}
-        graph.enqueue(t);
+        if (graph.count() == 20){graph.pop();}
+        graph.enqueue( round(t) ); // round(t*10)/10
+        // if (graphData.length() == 200) {graphData = graphData.substring(14,18)}
+        // strcpy(graphData, String(graphData) + " " + String(t1));
     }
 
     // log data every 10 minutes
     if (now-logDelay>600000UL) {
       logDelay = now;
       // keep 24 hours
-      if (queue.count() == 143){queue.pop();}
-      queue.enqueue(t);
+      if (queue.count() == 144){queue.pop();}
+      queue.enqueue( round(t) ); // round(t*10)/10
     }
 }
 
 int getGraphData(String args) {
 
-  graphData = graph.toString();
+  strcpy(graphData,graph.toString());
   return 1;
 
 }
