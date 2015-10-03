@@ -201,7 +201,7 @@ String QueueArray<T>::toString () {
 
   // create string
   for (int i = 0; i < items; i++)
-    str = str + " " + String(contents[i]);
+    str = str + "" + String(contents[i]);
 
   return str.trim();
 

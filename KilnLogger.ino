@@ -16,7 +16,7 @@
 ****************************************
 This code is rewritten from the original code for the Arduino to control the I2C OLED from http://Wide.HK
 
-The code below works to use the SparkCore microcontrller (available at http://spark.io )
+The code below works to use the SparkCore microcontrller (available at http://Particle.io )
 Pins used on the SparkCore:
 
 DO - SDA
@@ -100,11 +100,11 @@ void setup()
 {
 
     pinMode(LEDPIN, OUTPUT);
-    Spark.function("status", Status);
-    Spark.function("Switch", Switch);
+    Particle.function("status", Status);
+    Particle.function("Switch", Switch);
 
-    Spark.function("getData", getGraphData);
-    Spark.variable("history", &graphData, STRING);
+    Particle.function("getData", getGraphData);
+    Particle.variable("history", graphData, STRING);
 
 //begin Wire communication with OLED
 Wire.begin();
@@ -118,15 +118,15 @@ Wire.begin();
  digitalWrite(TC_0,HIGH);  // Disable device
 
 //set the one external function to call to update the OLED with a message
-Spark.function("update", update);
+Particle.function("update", update);
 
 
-    Spark.variable("humidity", &h1, STRING);
-    Spark.variable("temperature", &t1, STRING);
+    Particle.variable("humidity", h1, STRING);
+    Particle.variable("temperature", t1, STRING);
 
-    Spark.variable("thermocouple", &t2, STRING);
+    Particle.variable("thermocouple", t2, STRING);
 
-    Spark.variable("data", &data, STRING);
+    Particle.variable("data", data, STRING);
 //initialize screen
 SetupScreen();
 
@@ -161,10 +161,10 @@ void loop()
 
         if(function == 1) {
             digitalWrite(LEDPIN, HIGH);
-            Spark.publish("switch", String('1'), 60, PRIVATE); }
+            Particle.publish("switch", String('1'), 60, PRIVATE); }
         if(function < 0 || function > 1) {
             digitalWrite(LEDPIN, LOW);
-            Spark.publish("switch", String('0'), 60, PRIVATE); }
+            Particle.publish("switch", String('0'), 60, PRIVATE); }
 
         /* if(function == 0) sendMessage("0"); // "no click"
 
@@ -230,9 +230,9 @@ void loop()
     // Publish data every 15 seconds
     if (now-publishDelay>15000UL) {
         publishDelay = now;
-        Spark.publish("temperature", String(t1), 60, PRIVATE);
-        Spark.publish("humidity",String(h1), 60, PRIVATE);
-        Spark.publish("thermocouple", String(t2), 60, PRIVATE);
+        Particle.publish("temperature", String(t1), 60, PRIVATE);
+        Particle.publish("humidity",String(h1), 60, PRIVATE);
+        Particle.publish("thermocouple", String(t2), 60, PRIVATE);
         if (graph.count() == 20){graph.pop();}
         graph.enqueue( round(t) ); // round(t*10)/10
         // if (graphData.length() == 200) {graphData = graphData.substring(14,18)}
