@@ -198,12 +198,16 @@ template<typename T>
 String QueueArray<T>::toString () {
 
   String str;
-
   // create string
-  for (int i = 0; i < items; i++)
-    str = str + "" + String(contents[i]);
-
-  return str.trim();
+  for (int i = 0; i < items; i++) {
+    String ptr = String(contents[i]);
+    int space=4;
+    while (ptr.length() < space) {
+      ptr = "0" + ptr;
+    }
+    str = str + "" + ptr;
+  }
+  return str;
 
 }
 
