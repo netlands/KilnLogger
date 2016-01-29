@@ -139,8 +139,6 @@ void loop()
 				if(function == 1) {
 						digitalWrite(LEDPIN, HIGH);
 						Particle.publish("switch", String('1'), 60, PRIVATE); }
-				if(function == -1) {
-						shutdown();	}
 				if(function < 0 || function > 1) {
 						digitalWrite(LEDPIN, LOW);
 						Particle.publish("switch", String('0'), 60, PRIVATE); }
