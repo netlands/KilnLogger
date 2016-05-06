@@ -6,6 +6,10 @@
 
 #include "QueueArray.h"
 
+// #include "Wire.h"
+#include "OLedI2C.h"
+OLedI2C OLED;
+
 /*
 	Temperature Reading from a MAX6675
 	Ryan McLaughlin <ryanjmclaughlin@gmail.com>
@@ -15,10 +19,6 @@
 #define SCK A3	 // Serial Clock
 #define TC_0 A2	// CS Pin of MAX6607
 int TC_0_calib = 0;	// -10? Calibration compensation value in digital counts (.25˚C)
-
-char OLED_Address = 0x3c;
-char OLED_Command_Mode = 0x80;
-char OLED_Data_Mode = 0x40;
 
 char h1[10];	// humidity string
 char t1[10];	// temperature string
@@ -85,6 +85,8 @@ void setup()
 
 //begin Wire communication with OLED
 Wire.begin();
+//initialize screen
+OLED.init();
 
  // pinMode(DHTPIN, INPUT_PULLUP); // not used as we have an external pullup
 
@@ -95,7 +97,7 @@ Wire.begin();
  digitalWrite(TC_0,HIGH);	// Disable device
 
 //set the one external function to call to update the OLED with a message
-Particle.function("update", update);
+Particle.function("update", updateDisplay);
 
 
 		Particle.variable("humidity", h1, STRING);
@@ -104,15 +106,13 @@ Particle.function("update", update);
 		Particle.variable("thermocouple", t2, STRING);
 
 		Particle.variable("data", data, STRING);
-//initialize screen
-SetupScreen();
 
-sendCommand(0x01); // ** Clear display
-sendMessage("started");
+OLED.clearLcd(); // ** Clear display
+OLED.sendString("started",0,0);
 
 delay(1000);//wait one sec to see the started message
 
-sendCommand(0x01); // ** Clear display
+OLED.clearLcd(); // ** Clear display
 
 	// Setup button timers (all in milliseconds / ms)
 	// (These are default if not set, but changeable for convenience)
@@ -180,24 +180,24 @@ void loop()
 				else
 						f = 0;
 
-					sendCommand(0x01); // ** Clear display
+					OLED.sendCommand(0x01); // ** Clear display
 					sprintf(h1, "%.1f", h); // convert Float to String
 					sprintf(t1, "%.1f", t);
-					sendMessage("ROOM ");
-					sendMessage(t1);
-					sendData(0xDF);
+					OLED.sendMessage("ROOM ");
+					OLED.sendMessage(t1);
+					OLED.sendData(0xDF);
 
-					sendMessage(" ");
+					OLED.sendMessage(" ");
 
-					sendMessage(h1);
-					sendData(0x25);
+					OLED.sendMessage(h1);
+					OLED.sendData(0x25);
 
-					sendCommand(0xC0); // ** New Line
+					OLED.sendCommand(0xC0); // ** New Line
 
-					sendMessage("SENSOR ");
+					OLED.sendMessage("SENSOR ");
 
-					sendMessage(String(round(temp),0));
-					sendData(0xDF);
+					OLED.sendMessage(t2); //String(round(temp),0));
+					OLED.sendData(0xDF);
 
 					// format your data as JSON, don't forget to escape the double quotes
 					sprintf(data, "{\"sensor\":%.1f,\"temperature\":%.1f,\"humidity\":%.1f,\"size\":%.1i}",temp ,t , h, graph.count());
@@ -366,12 +366,11 @@ Make sure you replace the {YOURDEVICEID} and {YOURACCESSTOKEN} with information 
 ****************************************
 */
 
-
-int update(String args)
-{
+int updateDisplay(String args)
+{ /*
 int status_code = 0;
 
-sendCommand(0x01); // ** Clear display
+OLED.sendCommand(0x01); // ** Clear display
 
 args.replace("%20"," ");
 
@@ -379,104 +378,24 @@ int commaPosition = args.indexOf(",");//find if there is a delim character
 
 if(commaPosition>-1){
 //two lines
-sendMessage(args.substring(0,commaPosition));//send first part
-sendCommand(0xC0); // ** New Line
-sendMessage(args.substring(commaPosition+1, args.length()));//send second part
+OLED.sendMessage(args.substring(0,commaPosition));//send first part
+OLED.sendCommand(0xC0); // ** New Line
+OLED.sendMessage(args.substring(commaPosition+1, args.length()));//send second part
 
 status_code = 2;//lines
 
 }else{
 //one line
-sendMessage(args);
+OLED.sendMessage(args);
 
 status_code = 1;//lines
 }
 
 //how many lines sent to display
-return status_code;
+return status_code; */
 }
 
-void SetupScreen(void){
-// * I2C initial * //
-delay(100);
-sendCommand(0x2A); // ** Set "RE"=1 00101010B
-sendCommand(0x71);
-sendCommand(0x5C);
-sendCommand(0x28);
 
-sendCommand(0x08); // ** Set Sleep Mode On
-sendCommand(0x2A); // ** Set "RE"=1 00101010B
-sendCommand(0x79); // ** Set "SD"=1 01111001B
-
-sendCommand(0xD5);
-sendCommand(0x70);
-sendCommand(0x78); // ** Set "SD"=0
-
-sendCommand(0x08); // ** Set 5-dot, 3 or 4 line(0x09), 1 or 2 line(0x08)
-
-sendCommand(0x06); // ** Set Com31->Com0 Seg0->Seg99
-
-// ** Set OLED Characterization * //
-sendCommand(0x2A); // ** Set "RE"=1
-sendCommand(0x79); // ** Set "SD"=1
-
-// ** CGROM/CGRAM Management * //
-sendCommand(0x72); // ** Set ROM
-sendCommand(0x00); // ** Set ROM A and 8 CGRAM
-
-sendCommand(0xDA); // ** Set Seg Pins HW Config
-sendCommand(0x10);
-
-sendCommand(0x81); // ** Set Contrast
-sendCommand(0xFF);
-
-sendCommand(0xDB); // ** Set VCOM deselect level
-sendCommand(0x30); // ** VCC x 0.83
-
-sendCommand(0xDC); // ** Set gpio - turn EN for 15V generator on.
-sendCommand(0x03);
-
-sendCommand(0x78); // ** Exiting Set OLED Characterization
-sendCommand(0x28);
-sendCommand(0x2A);
-//sendCommand(0x05); // ** Set Entry Mode
-sendCommand(0x06); // ** Set Entry Mode
-sendCommand(0x08);
-sendCommand(0x28); // ** Set "IS"=0 , "RE" =0 //28
-sendCommand(0x01);
-sendCommand(0x80); // ** Set DDRAM Address to 0x80 (line 1 start)
-
-delay(100);
-sendCommand(0x0C); // ** Turn on Display
-
-}
-
-void sendData(unsigned char data)
-{
-Wire.beginTransmission(OLED_Address); // ** Start I2C
-Wire.write(OLED_Data_Mode); // ** Set OLED Data mode
-Wire.write(data);
-Wire.endTransmission(); // ** End I2C
-}
-
-void sendCommand(unsigned char command)
-{
-Wire.beginTransmission(OLED_Address); // ** Start I2C
-Wire.write(OLED_Command_Mode); // ** Set OLED Command mode
-Wire.write(command);
-Wire.endTransmission(); // ** End I2C
-delay(10);
-}
-
-void sendMessage(String message)
-{
-unsigned char i=0;
-while(message[i])
-{
-sendData(message[i]); // * Show String to OLED
-i++;
-}
-}
 
 void shutdown() {
     System.sleep(SLEEP_MODE_DEEP, 99999); //sleep for ages :)
