@@ -6,6 +6,9 @@
 
 #include "QueueArray.h"
 
+#include "PowerShield.h"
+PowerShield batteryMonitor;
+
 // #include "Wire.h"
 #include "OLedI2C.h"
 OLedI2C OLED;
@@ -88,6 +91,9 @@ Wire.begin();
 //initialize screen
 OLED.init();
 
+batteryMonitor.reset();
+batteryMonitor.quickStart();
+
  // pinMode(DHTPIN, INPUT_PULLUP); // not used as we have an external pullup
 
  pinMode(SO, INPUT);
@@ -166,6 +172,10 @@ void loop()
 		if (now-lastTime>2500UL) {
 				lastTime = now;
 
+				// monitor battery
+				float cellVoltage = batteryMonitor.getVCell();
+				float stateOfCharge = batteryMonitor.getSoC();
+
 				// Read the thermocouple temperature and print it to serial
 				temp = (float)read_temp(TC_0,1,TC_0_calib,10) / 10;
 				sprintf(t2, "%.1f", temp);
@@ -194,10 +204,16 @@ void loop()
 
 					OLED.sendCommand(0xC0); // ** New Line
 
-					OLED.sendMessage("SENSOR ");
+					OLED.sendMessage("TEMP ");
 
 					OLED.sendMessage(t2); //String(round(temp),0));
 					OLED.sendData(0xDF);
+
+					OLED.sendMessage(" ");
+					char v1[10];
+					sprintf(v1, "%.1f", stateOfCharge);
+					OLED.sendMessage(v1);
+					OLED.sendMessage("%");
 
 					// format your data as JSON, don't forget to escape the double quotes
 					sprintf(data, "{\"sensor\":%.1f,\"temperature\":%.1f,\"humidity\":%.1f,\"size\":%.1i}",temp ,t , h, graph.count());
