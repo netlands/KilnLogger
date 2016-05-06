@@ -14,7 +14,7 @@
 #define SO A4		// MISO
 #define SCK A3	 // Serial Clock
 #define TC_0 A2	// CS Pin of MAX6607
-int TC_0_calib = -10;	// Calibration compensation value in digital counts (.25˚C)
+int TC_0_calib = 0;	// -10? Calibration compensation value in digital counts (.25˚C)
 
 char OLED_Address = 0x3c;
 char OLED_Command_Mode = 0x80;
