@@ -153,9 +153,9 @@ void loop()
 
 				if(function == -1) sendMessage("111"); // "SINGLE LONG click"
 
-				if(function == -2) sendMessage("222"); // "DOUBLE LONG click" */
+				if(function == -2) sendMessage("222"); // "DOUBLE LONG click"
 
-				if(function == -3) System.reset(); // "TRIPLE LONG click"
+				if(function == -3) System.reset(); // "TRIPLE LONG click" */
 
 				function = 0;
 		}
@@ -194,13 +194,13 @@ void loop()
 
 					sendCommand(0xC0); // ** New Line
 
-					sendMessage("KILN ");
+					sendMessage("SENSOR ");
 
 					sendMessage(String(round(temp),0));
 					sendData(0xDF);
 
 					// format your data as JSON, don't forget to escape the double quotes
-					sprintf(data, "{\"kiln\":%.1f,\"temperature\":%.1f,\"humidity\":%.1f,\"size\":%.1i}",temp ,t , h, graph.count());
+					sprintf(data, "{\"sensor\":%.1f,\"temperature\":%.1f,\"humidity\":%.1f,\"size\":%.1i}",temp ,t , h, graph.count());
 
 					}
 
