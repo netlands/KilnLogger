@@ -39,7 +39,7 @@ class PowerShield {
 		void clearAlert();
 		void reset();
 		void quickStart();
-	
+
 	private:
 
 		void readConfigRegister(byte &MSB, byte &LSB);

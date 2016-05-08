@@ -21,7 +21,7 @@ OLedI2C OLED;
 #define SO A4		// MISO
 #define SCK A3	 // Serial Clock
 #define TC_0 A2	// CS Pin of MAX6607
-int TC_0_calib = 0;	// -10? Calibration compensation value in digital counts (.25˚C)
+int TC_0_calib = -9;	// -10? Calibration compensation value in digital counts (.25˚C)
 
 char h1[10];	// humidity string
 char t1[10];	// temperature string
@@ -143,12 +143,15 @@ void loop()
 				if (button1.clicks != 0) function = button1.clicks;
 
 				if(function == 1) {
-						digitalWrite(LEDPIN, HIGH);
-						Particle.publish("switch", String('1'), 60, PRIVATE); }
+						// digitalWrite(LEDPIN, HIGH);
+						// Particle.publish("switch", String('1'), 60, PRIVATE);
+						OLED.lcdOn();
+						}
 				if(function < 0 || function > 1) {
-						digitalWrite(LEDPIN, LOW);
-						Particle.publish("switch", String('0'), 60, PRIVATE); }
-
+						// digitalWrite(LEDPIN, LOW);
+						// Particle.publish("switch", String('0'), 60, PRIVATE);
+						OLED.lcdOff();
+						System.sleep(LEDPIN, CHANGE); }
 				/* if(function == 0) sendMessage("0"); // "no click"
 
 				if(function == 1) sendMessage("1"); // "SINGLE click"
@@ -178,7 +181,7 @@ void loop()
 
 				// Read the thermocouple temperature and print it to serial
 				temp = (float)read_temp(TC_0,1,TC_0_calib,10) / 10;
-				sprintf(t2, "%.1f", temp);
+				sprintf(t2, "%.0f", temp);
 
 				int result = DHT.acquireAndWait();
 				f = 0;
@@ -354,33 +357,6 @@ unsigned int read_temp(int pin, int type, int error, int samples) {
 }
 
 
-//*************************************//
-// --- WIDE.HK---//
-// - SSD131x PMOLED Controller -//
-// - SCL, SDA, GND, VCC(3.3v 5v) --//
-//*************************************//
-
-/*
-****************************************
-This code is rewritten from the original code for the Arduino to control the I2C OLED from http://Wide.HK
-
-The code below works to use the SparkCore microcontrller (available at http://Particle.io )
-Pins used on the SparkCore:
-
-DO - SDA
-D1 - SCL
-3V
-GND
-
-see here for pins: http://docs.spark.io/#/hardware/pins-and-i-o-i2c
-
-To call this method and update the display you can use cURL like this:
-
-curl https://api.spark.io/v1/devices/{YOURDEVICEID}/update -d access_token={YOURACCESSTOKEN} -d "args=Hello World,Line 2 Text"
-
-Make sure you replace the {YOURDEVICEID} and {YOURACCESSTOKEN} with information from your SparkCore
-****************************************
-*/
 
 int updateDisplay(String args)
 { /*

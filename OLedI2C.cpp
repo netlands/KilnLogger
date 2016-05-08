@@ -11,6 +11,31 @@ Updated 06/11/2013 to include the cursPos data in the sendString function
 sendString("string", col, row)
 
 */
+
+
+//*************************************//
+// --- WIDE.HK---//
+// - SSD131x PMOLED Controller -//
+// - SCL, SDA, GND, VCC(3.3v 5v) --//
+//*************************************//
+
+/*
+****************************************
+This code is rewritten from the original code for the Arduino to control the I2C OLED from http://Wide.HK
+
+The code below works to use the SparkCore microcontrller (available at http://Particle.io )
+Pins used on the SparkCore:
+
+DO - SDA
+D1 - SCL
+3V
+GND
+
+see here for pins: http://docs.spark.io/#/hardware/pins-and-i-o-i2c
+****************************************
+*/
+
+
 #include "application.h"
 #include "OLedI2C.h"
 // #include "Wire.h"

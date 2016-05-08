@@ -7,9 +7,9 @@
 // MAX17043 datasheet: http://datasheets.maximintegrated.com/en/ds/MAX17043-MAX17044.pdf
 //
 
-/* 
+/*
          -----[    ]-----
-        -|VIN        3V3|-    
+        -|VIN        3V3|-
         -|GND        RST|-
         -|TX        VBAT|-
         -|RX         GND|-
@@ -18,11 +18,11 @@
         -|A5          D5|-
         -|A4          D4|-
         -|A3          D3|- ALERT interrupt from MAX17043 (optional solder bridge)
-        -|A2          D2|- 
+        -|A2          D2|-
         -|A1          D1|- SCL |- MAX17043 connected to the I2C channel with address 0x36
         -|A0          D0|- SDA |
           \____________/
- 
+
 */
 
 
@@ -44,7 +44,7 @@ float PowerShield::getVCell() {
 
 	byte MSB = 0;
 	byte LSB = 0;
-	
+
 	readRegister(VCELL_REGISTER, MSB, LSB);
 	int value = (MSB << 4) | (LSB >> 4);
 	return map(value, 0x000, 0xFFF, 0, 50000) / 10000.0;
@@ -53,13 +53,13 @@ float PowerShield::getVCell() {
 
 // Read and return the state of charge of the cell
 float PowerShield::getSoC() {
-	
+
 	byte MSB = 0;
 	byte LSB = 0;
-	
+
 	readRegister(SOC_REGISTER, MSB, LSB);
 	float decimal = LSB / 256.0;
-	return MSB + decimal;	
+	return MSB + decimal;
 }
 
 // Return the version number of the chip
@@ -67,7 +67,7 @@ int PowerShield::getVersion() {
 
 	byte MSB = 0;
 	byte LSB = 0;
-	
+
 	readRegister(VERSION_REGISTER, MSB, LSB);
 	return (MSB << 8) | LSB;
 }
@@ -76,7 +76,7 @@ byte PowerShield::getCompensateValue() {
 
 	byte MSB = 0;
 	byte LSB = 0;
-	
+
 	readConfigRegister(MSB, LSB);
 	return MSB;
 }
@@ -85,8 +85,8 @@ byte PowerShield::getAlertThreshold() {
 
 	byte MSB = 0;
 	byte LSB = 0;
-	
-	readConfigRegister(MSB, LSB);	
+
+	readConfigRegister(MSB, LSB);
 	return 32 - (LSB & 0x1F);
 }
 
@@ -94,11 +94,11 @@ void PowerShield::setAlertThreshold(byte threshold) {
 
 	byte MSB = 0;
 	byte LSB = 0;
-	
-	readConfigRegister(MSB, LSB);	
+
+	readConfigRegister(MSB, LSB);
 	if(threshold > 32) threshold = 32;
 	threshold = 32 - threshold;
-	
+
 	writeRegister(CONFIG_REGISTER, MSB, (LSB & 0xE0) | threshold);
 }
 
@@ -107,8 +107,8 @@ boolean PowerShield::getAlert() {
 
 	byte MSB = 0;
 	byte LSB = 0;
-	
-	readConfigRegister(MSB, LSB);	
+
+	readConfigRegister(MSB, LSB);
 	return LSB & 0x20;
 }
 
@@ -116,17 +116,17 @@ void PowerShield::clearAlert() {
 
 	byte MSB = 0;
 	byte LSB = 0;
-	
-	readConfigRegister(MSB, LSB);	
+
+	readConfigRegister(MSB, LSB);
 }
 
 void PowerShield::reset() {
-	
+
 	writeRegister(COMMAND_REGISTER, 0x00, 0x54);
 }
 
 void PowerShield::quickStart() {
-	
+
 	writeRegister(MODE_REGISTER, 0x40, 0x00);
 }
 
@@ -141,7 +141,7 @@ void PowerShield::readRegister(byte startAddress, byte &MSB, byte &LSB) {
 	Wire.beginTransmission(MAX17043_ADDRESS);
 	Wire.write(startAddress);
 	Wire.endTransmission();
-	
+
 	Wire.requestFrom(MAX17043_ADDRESS, 2);
 	MSB = Wire.read();
 	LSB = Wire.read();
