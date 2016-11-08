@@ -21,7 +21,7 @@ OLedI2C OLED;
 #define SO A4		// MISO
 #define SCK A3	 // Serial Clock
 #define TC_0 A2	// CS Pin of MAX6607
-int TC_0_calib = -9;	// -10? Calibration compensation value in digital counts (.25˚C)
+int TC_0_calib = 0;	// -10? Calibration compensation value in digital counts (.25˚C)
 
 char h1[10];	// humidity string
 char t1[10];	// temperature string
@@ -71,6 +71,8 @@ unsigned long logDelay = 0UL;
 // create a queue of numbers.
 QueueArray <int> queue;
 QueueArray <int> graph;
+
+bool asleep = 0;
 
 void setup()
 {
@@ -131,6 +133,11 @@ OLED.clearLcd(); // ** Clear display
 void loop()
 {
 
+	if (!asleep) {
+		asleep = 0;
+		OLED.lcdOn();
+	}
+
 	unsigned long now	= millis();
 
 		if (now-buttonDelay>5UL) {
@@ -145,14 +152,13 @@ void loop()
 				if(function == 1) {
 						// digitalWrite(LEDPIN, HIGH);
 						// Particle.publish("switch", String('1'), 60, PRIVATE);
-						OLED.lcdOn();
-						}
-				if(function < 0 || function > 1) {
+
+				}
+				/*if(function < 0 || function > 1) {
 						// digitalWrite(LEDPIN, LOW);
 						// Particle.publish("switch", String('0'), 60, PRIVATE);
-						OLED.lcdOff();
-						System.sleep(LEDPIN, CHANGE); }
-				/* if(function == 0) sendMessage("0"); // "no click"
+					}
+				if(function == 0) sendMessage("0"); // "no click"
 
 				if(function == 1) sendMessage("1"); // "SINGLE click"
 
@@ -160,9 +166,14 @@ void loop()
 
 				if(function == 3) sendMessage("3"); // "TRIPLE click"
 
-				if(function == -1) sendMessage("111"); // "SINGLE LONG click"
+				*/
+				if(function == -1) {
+					asleep = 1;
+					OLED.lcdOff();
+					System.sleep(buttonPin1, CHANGE);
+				} // sendMessage("111"); // "SINGLE LONG click"
 
-				if(function == -2) sendMessage("222"); // "DOUBLE LONG click"
+				/* if(function == -2) sendMessage("222"); // "DOUBLE LONG click"
 
 				if(function == -3) System.reset(); // "TRIPLE LONG click" */
 
